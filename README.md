@@ -11,16 +11,13 @@ TODOs or FIXMEs will be ignored.
   **No Flags**: If not flag is specified, the TODOscript will assume the directory it is in as the projects root folder.
 
 ## Usage
-Naviagate to the directory containing the TODOscript, and invoke the script by typing:
-```shell
-$ ./TODOscript
-```
-If the directory cotaining the TODOscript is not the project folder, either copy the TODOscript to the desired folder or type:
-```shell
-$ ./TODOscript -p "path_to_project"
-```
-where "path_to_project" is the absolute path to the projects folder. For example, if the project folder is found on the desktop,
-the "path_to_project" may be similiar to "/home/USERNAME/Desktop".
+Navigate to the directory containing the TODOscript, and invoke the script by typing:
+![](images/run_todo.png)  
+If the directory containing the TODOscript is not the project folder, either copy the TODOscript to the desired folder or type:  
+
+![](images/run_todo_pflag.png)
+
+where "/home/jonathon/Desktop/SomeProject" is the absolute path to the projects folder.
 ## Valid File Types
   All of the following file types are supported:  
   -C/C++  
