@@ -1,0 +1,193 @@
+#!/bin/bash
+
+# These are all the valid file extensions the comments can be parsed from.
+# /* */, //, #, ''' ''', <!-- --> are the valid comment styles. 
+# Currently void, but once the parser is designed, use will become clear
+declare -a valid_file_types=("*.c" "*.cpp" "*.h" "*.cxx" "*.C" "*.cc" \
+    "*.hpp" "*.java" "*.py" "*.html" "*.css" "*.js")
+
+# Path to root/project folder
+# Will be replaced with specified path if applicable
+path=$(pwd)
+
+# The total number of todo's written to TODO_t/
+todo_c=0
+
+# The number of files scanned for TODOs/FIXMEs
+valid_file_c=0
+
+# The number of invalid files encountered and skipped
+inv_file_c=0
+
+# The number of files encountered, whether valid or not
+total_file_c=0
+
+# The number of (sub)direcotires scanned for todos
+dir_c=1
+
+# Print the correct usage of this, then exit
+display_usage() {
+    echo "Usage: todoscript \[-p \"path_to_project\"\]\*"
+    exit
+}
+
+# Display welcome messages to the user
+welcome_user() {
+    echo "Welcome to TODOscript, "$USER"!"
+}
+
+# Display salute messages to the user
+# with statistics of the script run
+salute_user() {
+
+    echo
+    echo ======================= SUMMARY ===========================
+    if [ $todo_c -eq 0 ];
+    then
+        echo "TODOscript detected that there is nothing TODO. You may sleep now."
+    else
+        echo "TODOscript is complete--$todo_c TODO\(s\) added to TODO_t/"
+    fi
+    echo "Total directories scanned:""   $dir_c"
+    echo "Total files found:""           $total_file_c"
+    echo "Total valid files scanned:""   $valid_file_c"
+    echo "Total invalid files skipped: $inv_file_c"
+    echo "Thank you for using TODOscript, $USER!"
+}
+
+# Gain the users premission to wipe the 'TODO_t/' folder
+# Wipe if the user agrees, exits if the user declines, re-prompt if else
+todo_removal_permission() {
+
+    printf 'Permission to wipe TODO_t/ [y/n]: '
+
+    read -n1 appr
+    echo ""
+
+    if [[ $appr == "y" ]] || [[ $appr == "Y" ]];
+    then
+        rm -r TODO_t/
+        return 0
+    fi
+    if [[ $appr == "n" ]] || [[ $appr == "N" ]];
+    then
+        printf 'Permission Denied...exiting\n'
+        exit
+    else
+        echo "Invalid response: "$appr", please try again"
+        todo_removal_permission
+    fi
+}
+
+# Generate a new TODO_t/ to populate, given the user gives permission
+generate_todo_dir() {
+
+    if [ -d "$path/TODO_t" ];
+    then
+        todo_removal_permission
+        echo "Generating new TODO_t/"
+    else
+        echo "TODO_t/ not found...generating a new one"
+    fi
+
+    mkdir "$path/TODO_t"
+}
+
+# Scan the current directory and handle all valid file types. Loop on the
+# subdirectories after all files are parsed
+scan_dir() {
+
+    echo ""
+    echo "--- Scanning "$1"/ ----"
+
+    # Explore valid files
+    for file in $1/*;
+    do
+        if [ -f $file ] && is_valid_file $file;
+        then
+            printf 'Scanning %s for TODOs...' "$file"
+            scan_file $1 $file
+            printf 'done\n'
+        fi
+    done
+
+    # Explore sub directories
+    for subdir in $1/*;
+    do
+        if [[ -d $subdir ]] && [[ $subdir != "*/TODO_t" ]];
+        then
+            ((dir_c++))
+            scan_dir $subdir
+        fi
+    done
+}
+
+
+# Determine if the file is one of the supported languages and has read
+# premissions
+is_valid_file() {
+
+    ((total_file_c++))
+    printf 'Checking if %s is a valid file type...' "$1"
+
+    for tfile in "${valid_file_types[@]}"
+    do
+        if [[ "$1" == $tfile ]];
+        then
+            ((valid_file_c++))
+            printf 'valid\n'
+            return 0
+        fi
+    done
+    ((inv_file_c++))
+    printf 'invalid\n'
+    return 1
+}
+
+# Determine if there exists atleast one TODO in the file, and if so, prepare
+# the header for the file. Exits when all TODOs in the file have been
+# parsed to the todo.txt
+scan_file() {
+
+    basename=${1##*/}
+    nfile=${2##*/}
+    todos=$(ls -l | grep -c TODO "${2}")
+    todo_c=$((todo_c + todos))
+
+    if [[ "$todos" != "0" ]];
+    then
+        printf 'found...'
+        echo "=== $nfile ===" >> "${path}/TODO_t/${basename}.txt"
+        grep -Pno "(TODO|FIXME).*$" "${2}" >> "${path}/TODO_t/${basename}.txt"
+        echo "" >> "${path}/TODO_t/${basename}.txt"
+    else
+        printf 'nothing found...'
+    fi
+}
+
+# Ensure the script is called with the correct args. See display_usage
+# for valid arguments
+handle_args() {
+
+    if [ $1 -eq 0 ];
+    then
+        return 0
+    fi
+
+    if [ $1 -eq 2 ] && [ "$1" != "-p" ];
+    then
+        path=$3
+    else
+        display_usage
+    fi
+
+}
+
+# Main
+welcome_user
+handle_args $# "$@"
+generate_todo_dir
+
+scan_dir $path
+
+salute_user
