@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # These are all the valid file extensions the comments can be parsed from.
-# /* */, //, #, ''' ''', <!-- --> are the valid comment styles. 
+# /* */, //, #, ''' ''', <!-- -->, % are the valid comment styles. 
 # Currently void, but once the parser is designed, use will become clear
 declare -a valid_file_types=("*.c" "*.cpp" "*.h" "*.cxx" "*.C" "*.cc" \
-    "*.hpp" "*.java" "*.py" "*.html" "*.css" "*.js")
+    "*.hpp" "*.java" "*.py" "*.html" "*.css" "*.js", "*.tex")
 
 # Path to root/project folder
 # Will be replaced with specified path if applicable
@@ -31,9 +31,16 @@ display_usage() {
     exit
 }
 
+# Notify the user that the TODOparser exe could not be built or was not found
+todoparser_error() {
+    echo "TODOparser was not found..."
+    echo "Please move the TODOparser to this directory"
+    exit
+}
+
 # Display welcome messages to the user
 welcome_user() {
-    echo "Welcome to TODOscript, "$USER"!"
+    echo "Welcome to TODOscript, $USER!"
 }
 
 # Display salute messages to the user
@@ -41,12 +48,12 @@ welcome_user() {
 salute_user() {
 
     echo
-    echo ======================= SUMMARY ===========================
+    echo "======================= SUMMARY ==========================="
     if [ $todo_c -eq 0 ];
     then
         echo "TODOscript detected that there is nothing TODO. You may sleep now."
     else
-        echo "TODOscript is complete--$todo_c TODO\(s\) added to TODO_t/"
+        echo "TODOscript is complete--$todo_c TODO(s) added to TODO_t/"
     fi
     echo "Total directories scanned:""   $dir_c"
     echo "Total files found:""           $total_file_c"
@@ -144,6 +151,25 @@ is_valid_file() {
     return 1
 }
 
+# Build the TODOparser exe to prepare for parsing. If the .cpp is not found,
+# display error and exit.
+build_TODOparser() {
+
+    if [ -f "TODOparser.cpp" ];
+    then
+        (g++ -o TODOparser TODOparser.cpp)
+
+        if [ -x "TODOparser" ];
+        then
+            echo TODOparser was built successfully
+        else
+            todoparser_error
+        fi
+    else
+        todoparser_error
+    fi
+}
+
 # Determine if there exists atleast one TODO in the file, and if so, prepare
 # the header for the file. Exits when all TODOs in the file have been
 # parsed to the todo.txt
@@ -151,18 +177,9 @@ scan_file() {
 
     basename=${1##*/}
     nfile=${2##*/}
-    todos=$(ls -l | grep -c TODO "${2}")
-    todo_c=$((todo_c + todos))
-
-    if [[ "$todos" != "0" ]];
-    then
-        printf 'found...'
-        echo "=== $nfile ===" >> "${path}/TODO_t/${basename}.txt"
-        grep -Pno "(TODO|FIXME).*$" "${2}" >> "${path}/TODO_t/${basename}.txt"
-        echo "" >> "${path}/TODO_t/${basename}.txt"
-    else
-        printf 'nothing found...'
-    fi
+    (./TODOparser "${nfile}" "${path}/TODO_t/${basename}.txt" < "${2}")
+    todo_found=${?}
+    todo_c=$((todo_c + todo_found))
 }
 
 # Ensure the script is called with the correct args. See display_usage
@@ -183,11 +200,25 @@ handle_args() {
 
 }
 
+# Scan TODO_t/ and remove any empty files that were created
+clean_dir() {
+
+    printf '\nCleaning up TODO_t/...'
+    for file in $1/*;
+    do
+        [ -s $file ] || rm -f $file
+    done
+    rm -f TODOparser.o TODOparser
+    echo "done"
+}
+
 # Main
 welcome_user
 handle_args $# "$@"
 generate_todo_dir
+build_TODOparser
 
 scan_dir $path
+clean_dir "${path}/TODO_t"
 
 salute_user
