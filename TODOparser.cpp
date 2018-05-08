@@ -53,8 +53,8 @@ static std::string todofilename = "";
  */
 int print_usage()
 {
-	fprintf(stderr, "[PARSER] Usage: TODOparser write_file\n");
-	return 1;
+    fprintf(stderr, "[PARSER] Usage: TODOparser write_file\n");
+    return 1;
 }
 
 /*
@@ -63,9 +63,9 @@ int print_usage()
  */
 std::string find_keyword(std::string line, int key)
 {
-	int tIndex;
-	return (tIndex = line.find(keyword[key])) != std::string::npos?
-			line.substr(tIndex) : "";
+    int tIndex;
+    return (tIndex = line.find(keyword[key])) != std::string::npos?
+            line.substr(tIndex) : "";
 }
 
 /*
@@ -75,19 +75,19 @@ std::string find_keyword(std::string line, int key)
  */
 int block_marker(std::string line, bool end)
 {
-	for (int i = 0; i < MAX_BLOCK; i++)
-	{
-		std::string marker(bMarkers[i]);
+    for (int i = 0; i < MAX_BLOCK; i++)
+    {
+        std::string marker(bMarkers[i]);
 
-		if (end)
-			std::reverse(marker.begin(), marker.end());
+        if (end)
+            std::reverse(marker.begin(), marker.end());
 
-		int loc = line.find(marker);
+        int loc = line.find(marker);
 
-		if (loc != std::string::npos)
-			return loc + marker.length();
-	}
-	return -1;
+        if (loc != std::string::npos)
+            return loc + marker.length();
+    }
+    return -1;
 }
 
 /*
@@ -97,12 +97,12 @@ int block_marker(std::string line, bool end)
 int single_marker(std::string line)
 {
     int loc = -1;
-	for (int i = 0; i < MAX_SINGLE; i++)
-	{
-		if ((loc = line.find(sMarkers[i])) != std::string::npos)
-			return loc + sMarkers[i].length();
-	}
-	return -1;
+    for (int i = 0; i < MAX_SINGLE; i++)
+    {
+        if ((loc = line.find(sMarkers[i])) != std::string::npos)
+            return loc + sMarkers[i].length();
+    }
+    return -1;
 }
 
 /*
@@ -115,26 +115,26 @@ int single_marker(std::string line)
 bool parse_line(std::string currline, int lineCount, int key, bool foundKey)
 {
     std::string subline;
-	if ((subline = find_keyword(currline, key)).compare("") != 0)
-	{
-		if (!todofile.is_open())
-			todofile.open(todofilename.c_str(), ios::out | ios::app);
+    if ((subline = find_keyword(currline, key)).compare("") != 0)
+    {
+        if (!todofile.is_open())
+            todofile.open(todofilename.c_str(), ios::out | ios::app);
 
-		if (!openned)
-		{
-			openned = true;
-			todofile << separator << filename << separator << std::endl;
-		}
+        if (!openned)
+        {
+            openned = true;
+            todofile << separator << filename << separator << std::endl;
+        }
 
-		todofile << "(" << keyCount++ << "):" << endl;
-		foundKey = true;
-	}
+        todofile << "(" << keyCount++ << "):" << endl;
+        foundKey = true;
+    }
     else
     {
         subline = currline;
     }
-	if (foundKey)
-		todofile << "\t[" << lineCount << "] " << boost::algorithm::trim_left(subline) << std::endl;
+    if (foundKey)
+        todofile << "\t[" << lineCount << "] " << subline << std::endl;
     return foundKey;
 }
 
@@ -166,23 +166,23 @@ int parse_line_comment(std::string currline, int lineCount)
     if (currline.length() == 0)
         return ++lineCount;
 
-	bool foundKey[KEYWORD_COUNT];
+    bool foundKey[KEYWORD_COUNT];
     init_bool(foundKey);
     int cmtIndex = 0;
     parse_keyword_line(currline, lineCount, foundKey);
     
-	for (std::string line; std::getline(std::cin, line);)
-	{
+    for (std::string line; std::getline(std::cin, line);)
+    {
         lineCount++;
-		if (single_marker(line) <  0)
+        if (single_marker(line) <  0)
             break;
 
         while ((cmtIndex = single_marker(line)) >= 0)
                 line = line.substr(cmtIndex);
 
-		parse_keyword_line(line, lineCount, foundKey);
-	}
-	return lineCount;
+        parse_keyword_line(line, lineCount, foundKey);
+    }
+    return lineCount;
 }
 
 /*
@@ -192,28 +192,28 @@ int parse_line_comment(std::string currline, int lineCount)
  */
 int parse_block_comment(std::string currline, int lineCount)
 {
-	bool foundKey[KEYWORD_COUNT];
+    bool foundKey[KEYWORD_COUNT];
     init_bool(foundKey);
-	if (currline.length() != 0 && block_marker(currline, true))
-		return ++lineCount;
+    if (currline.length() != 0 && block_marker(currline, true))
+        return ++lineCount;
 
-	for (std::string line; std::getline(std::cin, line);)
-	{
+    for (std::string line; std::getline(std::cin, line);)
+    {
         lineCount++;
-		if (block_marker(line, true) > 0)
+        if (block_marker(line, true) > 0)
             break;
 
-		parse_keyword_line(line, lineCount, foundKey);
-	}
-	return lineCount;
+        parse_keyword_line(line, lineCount, foundKey);
+    }
+    return lineCount;
 }
 
 /*
  * Returns the number of keyWords found in the file. */
 int main(int argc, char *argv[])
 {
-	if (argc != 3)
-		return print_usage();
+    if (argc != 3)
+        return print_usage();
     
     filename = argv[1];
     todofilename = argv[2];
@@ -223,25 +223,25 @@ int main(int argc, char *argv[])
         exit(1);
 
 
-	int lineCount = 1;
-	int startLine, endLine;
-	int cmtIndex;
+    int lineCount = 1;
+    int startLine, endLine;
+    int cmtIndex;
 
-	for (std::string line; std::getline(std::cin, line);)
-	{
-		if ((cmtIndex = block_marker(line, false)) > 0)
-		{
-			lineCount = parse_block_comment(line.substr(cmtIndex), lineCount);
-		}
+    for (std::string line; std::getline(std::cin, line);)
+    {
+        if ((cmtIndex = block_marker(line, false)) > 0)
+        {
+            lineCount = parse_block_comment(line.substr(cmtIndex), lineCount);
+        }
         else if ((cmtIndex = single_marker(line)) >= 0)
         {
             lineCount = parse_line_comment(line.substr(cmtIndex), lineCount);
         }
-		else
-		{
-			lineCount++;
-		}   
-	}
+        else
+        {
+            lineCount++;
+        }   
+    }
 
-	return keyCount;
+    return keyCount;
 }
